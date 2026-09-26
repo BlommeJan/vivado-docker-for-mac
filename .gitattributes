@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings, also when cloned on Windows
+* text=auto eol=lf
+*.bin binary
+*.lic binary

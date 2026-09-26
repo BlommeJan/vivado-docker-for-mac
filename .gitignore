@@ -1,0 +1,14 @@
+# Per-machine config (VNC password, license MAC)
+.env
+# Vivado install, AMD installer and license: large or personal, never commit
+xilinx/
+installer/
+license/
+# Vivado build/run output
+.Xil/
+*.jou
+*.log
+*.str
+.DS_Store
+# Default work folder (see WORK_DIR in .env)
+work/

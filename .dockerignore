@@ -1,0 +1,4 @@
+# Build context only needs the Dockerfile and docker/ (xilinx/ gets huge)
+*
+!Dockerfile
+!docker/

@@ -1,0 +1,15 @@
+#!/bin/bash -l
+# Desktop launcher target: starts the Vivado GUI in the work folder.
+
+fail() { xmessage -center "$1" 2>/dev/null || echo "$1" >&2; exit 1; }
+
+# type -P: the binary, not the vivado() wrapper function
+type -P vivado >/dev/null \
+    || fail "Vivado is not installed yet. Run ./install.sh on the host (see README.md)."
+ls /opt/license/*.lic >/dev/null 2>&1 \
+    || fail "No license file in the license folder. Vivado ${VIVADO_VERSION:-} needs one, even for the free Basic tier (see README.md)."
+
+mkdir -p ~/.cache/vivado
+cd /home/user/lab
+export LD_PRELOAD="$VIVADO_LD_PRELOAD"
+exec vivado -log ~/.cache/vivado/vivado.log -journal ~/.cache/vivado/vivado.jou "$@"

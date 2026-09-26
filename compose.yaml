@@ -1,0 +1,40 @@
+# All settings come from .env (see .env.example). Use ./start.sh, ./stop.sh, ./shell.sh.
+services:
+  vivado:
+    build:
+      context: .
+      args:
+        USER_UID: ${HOST_UID:-1000}
+        USER_GID: ${HOST_GID:-1000}
+    image: vivado-desktop:${VIVADO_VERSION:-2026.1}
+    # Vivado only exists for x86_64; on Apple Silicon this runs under Rosetta
+    platform: linux/amd64
+    init: true
+    # Fixed hostname + MAC: the Vivado license is node-locked to this MAC (host ID)
+    hostname: vivado
+    mac_address: ${CONTAINER_MAC:?run ./install.sh first (CONTAINER_MAC missing in .env)}
+    environment:
+      VNC_PASSWORD: ${VNC_PASSWORD:?run ./install.sh first (VNC_PASSWORD missing in .env)}
+      VNC_GEOMETRY: ${VNC_GEOMETRY:-1920x1080}
+      VIVADO_VERSION: ${VIVADO_VERSION:-2026.1}
+      VIVADO_DEVICES: ${VIVADO_DEVICES:-Artix-7,Zynq-7000,Spartan-7}
+      VIVADO_ROSETTA_WORKAROUND: ${VIVADO_ROSETTA_WORKAROUND:-auto}
+      VIVADO_MAX_THREADS: ${VIVADO_MAX_THREADS:-}
+      TZ: ${TZ:-Europe/Brussels}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${NOVNC_PORT:-6080}:6080"   # noVNC
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-o", "/dev/null", "http://localhost:6080/vnc.html"]
+      interval: 10s
+      start_period: 60s
+    # 0 = no limit (use everything Docker has)
+    mem_limit: ${CONTAINER_MEMORY:-0}
+    cpus: ${CONTAINER_CPUS:-0}
+    shm_size: ${SHM_SIZE:-2g}
+    # ":z" only with SELINUX_RELABEL set (SELinux hosts)
+    volumes:
+      - ${XILINX_DIR:-./xilinx}:/tools/Xilinx${SELINUX_RELABEL:+:z}          # Vivado install
+      - ${INSTALLER_DIR:-./installer}:/opt/installer${SELINUX_RELABEL:+:z}   # AMD .bin installer + install_config.txt
+      - ${LICENSE_DIR:-./license}:/opt/license:ro${SELINUX_RELABEL:+,z}      # Vivado license file(s) *.lic
+      - ${WORK_DIR:-./work}:/home/user/lab${SELINUX_RELABEL:+:z}             # your work
+    restart: "no"
