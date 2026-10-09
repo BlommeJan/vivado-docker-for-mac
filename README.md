@@ -6,7 +6,7 @@ to set up and no remote machine: everything runs on your own computer.
 
 ```bash
 ./install.sh   # one-time setup (checks your computer, installs Vivado)
-./start.sh     # then open http://localhost:6080
+vivado start   # then open http://localhost:6080
 ```
 
 | Your computer                      | How Vivado (x86_64) runs  | Status                       |
@@ -157,7 +157,10 @@ cd vivado-docker
    - generates a fixed container **MAC address**. Your Vivado license is tied to it (step 6).
    - on Linux, sets your user/group ID so files you create are owned by you;
 3. builds the container image (~1.3 GB, a few minutes);
-4. stops and tells you to download the installer (next step).
+4. offers to install the **`vivado` command** (a link in `~/.local/bin`), so `vivado start`,
+   `vivado stop`, … work from any folder and in any shell. Say no if you prefer `./start.sh` etc.;
+   you can add it later with `./install.sh --command`;
+5. stops and tells you to download the installer (next step).
 
 **Tip, keeping your projects next to it:** clone this repo into the folder where you keep your
 FPGA projects and set `WORK_DIR=..` in `.env`. All your projects then show up in Vivado, and this
@@ -229,13 +232,21 @@ Back up `.env` and `license/` somewhere safe.
 ## Daily use
 
 ```bash
-./start.sh     # start the desktop; prints the URL
-./stop.sh      # stop it (your files, Vivado and the license stay)
-./shell.sh     # terminal inside the container; or one command: ./shell.sh vivado -version
-./doctor.sh    # check everything; changes nothing
+vivado start     # start the desktop; prints the URL
+vivado stop      # stop it (your files, Vivado and the license stay)
+vivado restart   # stop, then start
+vivado shell     # terminal inside the container; or one command: vivado shell vivado -version
+vivado doctor    # check everything; changes nothing
+vivado install   # run the setup again (e.g. after updating this repo)
+vivado help
 ```
 
-1. `./start.sh`, then open <http://localhost:6080/vnc.html?autoconnect=1&resize=remote>
+The `vivado` command works from any folder. Without it (you answered no in `install.sh`, or
+another `vivado` is already on your PATH), run the scripts from this folder instead: `./start.sh`,
+`./stop.sh`, `./shell.sh`, `./doctor.sh`, `./install.sh`. Wherever this README says `./doctor.sh`
+you can type `vivado doctor`, and so on.
+
+1. `vivado start`, then open <http://localhost:6080/vnc.html?autoconnect=1&resize=remote>
 2. Enter your VNC password.
 3. Double-click **Vivado** on the desktop. It opens in your work folder (`/home/user/lab`).
 
@@ -280,6 +291,7 @@ keeps your values. A variable set in your shell wins over `.env`, e.g. `NOVNC_PO
 | `BIND_ADDRESS`              | `127.0.0.1`                    | Only this computer can connect. Keep it.                 |
 | `VNC_GEOMETRY`              | `1920x1080`                    | Start resolution (follows your browser window)           |
 | `TZ`                        | `Europe/Brussels`              | Time zone in the container                               |
+| `VIVADO_COMMAND`            | empty                          | `no` = `install.sh` stops offering the `vivado` command  |
 | `COMPOSE_PROJECT_NAME`      | `vivado`                       | Docker Compose project name                              |
 
 - **Change the VNC password:** edit `VNC_PASSWORD` in `.env` (6–8 characters), then `./stop.sh && ./start.sh`.
@@ -328,7 +340,7 @@ in `.gitignore`.
 - **Speed.** Native Linux is fastest. On Apple Silicon, emulation makes Vivado slower but fine
   for small and medium designs (a small Artix-7 design goes from synthesis to bitstream in ~1–2 min).
 - **Uninstall:** `./stop.sh`, `docker image rm vivado-desktop:2026.1`, then delete `xilinx/`
-  (and the repo folder).
+  (and the repo folder). Remove the command with `rm ~/.local/bin/vivado`.
 
 ## License
 

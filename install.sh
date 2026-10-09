@@ -7,11 +7,13 @@
 #
 #   ./install.sh            full setup
 #   ./install.sh --reconfig regenerate installer/install_config.txt (e.g. after changing VIVADO_DEVICES)
+#   ./install.sh --command  only install the 'vivado' command (vivado start, vivado stop, ...)
 . "$(dirname "$0")/docker/common.sh"
 
 case "${1:-}" in
     ''|--reconfig) ;;
-    -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --command) install_command; exit $? ;;
+    -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "Unknown option: $1 (see ./install.sh --help)" ;;
 esac
 
@@ -87,7 +89,25 @@ resource_report || die "Fix the problem above and run ./install.sh again."
 say "Building the image vivado-desktop:${VIVADO_VERSION}"
 docker compose build || die "Image build failed."
 
-# --- 5. Vivado ----------------------------------------------------------------
+# --- 5. The 'vivado' command ----------------------------------------------------
+if command_installed; then
+    say "The 'vivado' command is installed (vivado start, vivado stop, vivado shell, ...)"
+elif [ "${VIVADO_COMMAND:-}" = no ]; then
+    :
+elif [ -t 0 ]; then
+    echo
+    echo "Install the 'vivado' command? Then 'vivado start', 'vivado stop', 'vivado shell' and"
+    echo "'vivado doctor' work from any folder. It adds one link: $CMD_LINK"
+    read -r -p "Install it? [Y/n] " ans
+    case "$ans" in
+        [Nn]*) set_env VIVADO_COMMAND no; echo "Skipped. Add it later with ./install.sh --command" ;;
+        *)     install_command || true ;;
+    esac
+else
+    echo "Tip: ./install.sh --command installs the 'vivado' command (vivado start, vivado stop, ...)."
+fi
+
+# --- 6. Vivado ----------------------------------------------------------------
 if vivado_installed && [ "${1:-}" != --reconfig ]; then
     say "Vivado ${VIVADO_VERSION} is already installed in ${XILINX_DIR}"
 else
@@ -127,7 +147,7 @@ EOF
     docker compose exec -it vivado install-vivado.sh install || die "Vivado install did not complete."
 fi
 
-# --- 6. License ---------------------------------------------------------------
+# --- 7. License ---------------------------------------------------------------
 host_id=$(printf '%s' "$CONTAINER_MAC" | tr -d ':')
 if has_license && license_matches_mac; then
     say "License found in ${LICENSE_DIR} (host ID ${host_id} matches)"
@@ -152,4 +172,5 @@ EOF
 fi
 
 echo
-say "Setup done. Start with ./start.sh"
+if command_installed; then say "Setup done. Start with: vivado start"
+else say "Setup done. Start with ./start.sh"; fi

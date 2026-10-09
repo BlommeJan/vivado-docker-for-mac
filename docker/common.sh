@@ -274,3 +274,55 @@ resource_report() {
     fi
     return $fail
 }
+
+# ---------------------------------------------------------------------------------------------
+# The `vivado` command: a symlink in ~/.local/bin to this repo's ./vivado, so
+# `vivado start|stop|shell|doctor|install` works from any folder and in any shell.
+
+CMD_LINK="$HOME/.local/bin/vivado"
+
+command_installed() { [ -L "$CMD_LINK" ] && [ "$(readlink "$CMD_LINK")" = "$(pwd)/vivado" ]; }
+
+# Returns 0 if the command is installed (now or already), 1 if it was skipped.
+install_command() {
+    local bindir other rc line
+    bindir=$(dirname "$CMD_LINK")
+    if command_installed; then
+        ok "The 'vivado' command is installed ($CMD_LINK)"
+        return 0
+    fi
+    if [ -e "$CMD_LINK" ] || [ -L "$CMD_LINK" ]; then
+        warn "$CMD_LINK already exists and is not from this repo; leaving it alone."
+        more "Remove it yourself and run ./install.sh --command if you want to replace it."
+        return 1
+    fi
+    other=$(command -v vivado 2>/dev/null || true)
+    if [ -n "$other" ]; then
+        warn "Another 'vivado' is already on your PATH ($other); not adding this one."
+        more "Use ./start.sh, ./stop.sh, ... or make your own alias to $(pwd)/vivado."
+        return 1
+    fi
+    mkdir -p "$bindir" && ln -s "$(pwd)/vivado" "$CMD_LINK" || { warn "Could not create $CMD_LINK"; return 1; }
+    ok "Installed the 'vivado' command: $CMD_LINK -> $(pwd)/vivado"
+
+    # Make sure ~/.local/bin is on PATH for the user's login shell
+    case ":$PATH:" in *":$bindir:"*) return 0 ;; esac
+    line='export PATH="$HOME/.local/bin:$PATH"  # added by vivado-docker'
+    case "$(basename "${SHELL:-}")" in
+        fish)
+            rc="$HOME/.config/fish/conf.d/vivado-docker.fish"
+            mkdir -p "$(dirname "$rc")"
+            echo 'fish_add_path -g $HOME/.local/bin  # added by vivado-docker' > "$rc" ;;
+        zsh)
+            rc="$HOME/.zshrc"
+            grep -qs 'added by vivado-docker' "$rc" || echo "$line" >> "$rc" ;;
+        bash)
+            rc="$HOME/.bashrc"
+            [ "$(uname -s)" = Darwin ] && rc="$HOME/.bash_profile"
+            grep -qs 'added by vivado-docker' "$rc" || echo "$line" >> "$rc" ;;
+        *)
+            tip "Add $bindir to your PATH to use the 'vivado' command."
+            return 0 ;;
+    esac
+    more "Added $bindir to your PATH in $rc. Open a new terminal to use 'vivado'."
+}

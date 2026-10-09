@@ -1,0 +1,38 @@
+#!/bin/bash
+# One command for everything:  vivado start | stop | restart | shell | doctor | install
+# ./install.sh can link this into ~/.local/bin so `vivado ...` works from any folder.
+
+# Find the repo, also when called through a symlink
+src=$0
+while [ -L "$src" ]; do
+    dir=$(cd "$(dirname "$src")" && pwd)
+    src=$(readlink "$src")
+    case "$src" in /*) ;; *) src="$dir/$src" ;; esac
+done
+ROOT=$(cd "$(dirname "$src")" && pwd)
+
+usage() {
+    cat <<EOF
+Usage: vivado <command>
+
+  start            start the Vivado desktop and print the browser URL
+  stop             stop it (your files, Vivado and the license stay)
+  restart          stop, then start
+  shell [command]  terminal inside the container, or run one command there
+                   (e.g. vivado shell vivado -version)
+  doctor           check this computer and the setup; changes nothing
+  install          set up / update (same as ./install.sh; accepts --reconfig, --command)
+  help             show this
+
+Repo: $ROOT
+EOF
+}
+
+cmd=${1:-help}
+[ $# -gt 0 ] && shift
+case "$cmd" in
+    start|stop|shell|doctor|install) exec "$ROOT/$cmd.sh" "$@" ;;
+    restart)                         "$ROOT/stop.sh" && exec "$ROOT/start.sh" ;;
+    help|-h|--help)                  usage ;;
+    *)                               echo "Unknown command: $cmd" >&2; usage >&2; exit 1 ;;
+esac
