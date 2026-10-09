@@ -143,7 +143,7 @@ in `.env` (e.g. to keep your laptop responsive), and how many threads Vivado use
 ## 3. Run the setup
 
 ```bash
-git clone https://github.com/BlommeJan/vivado-docker.git vivado-docker
+git clone https://github.com/BlommeJan/vivado-docker-for-mac.git vivado-docker
 cd vivado-docker
 ./install.sh
 ```
